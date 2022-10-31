@@ -7,3 +7,11 @@ fn test_addresses() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_all_addresses() -> Result<()> {
+    let addrs = linkaddrs::all_addresses()?;
+    println!("{:?}", addrs);
+
+    Ok(())
+}
