@@ -9,6 +9,7 @@ use netlink_packet_route::rtnl::constants::{AF_INET, AF_INET6};
 use rtnetlink::new_connection;
 use tokio::runtime::Runtime;
 
+/// The errors that can occur when interacting with rtnetlink.
 #[derive(Debug)]
 pub enum Error {
     RtNetlink(rtnetlink::Error),
@@ -43,14 +44,18 @@ impl From<std::io::Error> for Error {
     }
 }
 
+/// An alias for `std::result::Result` that uses `Error`
+/// as its error type.
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// Get all IP addresses of an interface.
 pub fn addresses(link: String) -> Result<Vec<IpNet>> {
     let rt = Runtime::new()?;
 
     rt.block_on(internal_addresses(Some(link)))
 }
 
+/// Get the IPv4 addresses of an interface.
 pub fn ipv4_addresses(link: String) -> Result<Vec<Ipv4Net>> {
     let addrs = addresses(link)?
         .iter()
@@ -63,6 +68,7 @@ pub fn ipv4_addresses(link: String) -> Result<Vec<Ipv4Net>> {
     Ok(addrs)
 }
 
+/// Get the IPv6 addresses of an interface.
 pub fn ipv6_addresses(link: String) -> Result<Vec<Ipv6Net>> {
     let addrs = addresses(link)?
         .iter()
@@ -75,12 +81,14 @@ pub fn ipv6_addresses(link: String) -> Result<Vec<Ipv6Net>> {
     Ok(addrs)
 }
 
+/// Get all IP addresses of this host.
 pub fn all_addresses() -> Result<Vec<IpNet>> {
     let rt = Runtime::new()?;
 
     rt.block_on(internal_addresses(None))
 }
 
+/// Get the IPv4 addresses of this host.
 pub fn all_ipv4_addresses() -> Result<Vec<Ipv4Net>> {
     let addrs = all_addresses()?
         .iter()
@@ -93,6 +101,7 @@ pub fn all_ipv4_addresses() -> Result<Vec<Ipv4Net>> {
     Ok(addrs)
 }
 
+/// Get the IPv6 addresses of this host.
 pub fn all_ipv6_addresses() -> Result<Vec<Ipv6Net>> {
     let addrs = all_addresses()?
         .iter()
@@ -105,6 +114,8 @@ pub fn all_ipv6_addresses() -> Result<Vec<Ipv6Net>> {
     Ok(addrs)
 }
 
+/// Get the IP addresses. If filter is Some, limit the search
+/// to that interface.
 async fn internal_addresses(filter: Option<String>) -> Result<Vec<IpNet>> {
     let (connection, handle, _) = new_connection()?;
     tokio::spawn(connection);
