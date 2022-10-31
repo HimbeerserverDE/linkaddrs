@@ -3,6 +3,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 use futures::future;
 use futures::stream::{StreamExt, TryStreamExt};
+use ipnet::{IpNet, Ipv4Net, Ipv6Net};
 use netlink_packet_route::address::Nla::Address;
 use netlink_packet_route::rtnl::constants::{AF_INET, AF_INET6};
 use rtnetlink::new_connection;
@@ -44,67 +45,67 @@ impl From<std::io::Error> for Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub fn addresses(link: String) -> Result<Vec<IpAddr>> {
+pub fn addresses(link: String) -> Result<Vec<IpNet>> {
     let rt = Runtime::new()?;
 
     rt.block_on(internal_addresses(Some(link)))
 }
 
-pub fn ipv4_addresses(link: String) -> Result<Vec<Ipv4Addr>> {
+pub fn ipv4_addresses(link: String) -> Result<Vec<Ipv4Net>> {
     let addrs = addresses(link)?
         .iter()
         .filter_map(|addr| match addr {
-            IpAddr::V4(addr) => Some(*addr),
-            IpAddr::V6(_) => None,
+            IpNet::V4(addr) => Some(*addr),
+            IpNet::V6(_) => None,
         })
         .collect();
 
     Ok(addrs)
 }
 
-pub fn ipv6_addresses(link: String) -> Result<Vec<Ipv6Addr>> {
+pub fn ipv6_addresses(link: String) -> Result<Vec<Ipv6Net>> {
     let addrs = addresses(link)?
         .iter()
         .filter_map(|addr| match addr {
-            IpAddr::V4(_) => None,
-            IpAddr::V6(addr) => Some(*addr),
+            IpNet::V4(_) => None,
+            IpNet::V6(addr) => Some(*addr),
         })
         .collect();
 
     Ok(addrs)
 }
 
-pub fn all_addresses() -> Result<Vec<IpAddr>> {
+pub fn all_addresses() -> Result<Vec<IpNet>> {
     let rt = Runtime::new()?;
 
     rt.block_on(internal_addresses(None))
 }
 
-pub fn all_ipv4_addresses() -> Result<Vec<Ipv4Addr>> {
+pub fn all_ipv4_addresses() -> Result<Vec<Ipv4Net>> {
     let addrs = all_addresses()?
         .iter()
         .filter_map(|addr| match addr {
-            IpAddr::V4(addr) => Some(*addr),
-            IpAddr::V6(_) => None,
+            IpNet::V4(addr) => Some(*addr),
+            IpNet::V6(_) => None,
         })
         .collect();
 
     Ok(addrs)
 }
 
-pub fn all_ipv6_addresses() -> Result<Vec<Ipv6Addr>> {
+pub fn all_ipv6_addresses() -> Result<Vec<Ipv6Net>> {
     let addrs = all_addresses()?
         .iter()
         .filter_map(|addr| match addr {
-            IpAddr::V4(_) => None,
-            IpAddr::V6(addr) => Some(*addr),
+            IpNet::V4(_) => None,
+            IpNet::V6(addr) => Some(*addr),
         })
         .collect();
 
     Ok(addrs)
 }
 
-async fn internal_addresses(filter: Option<String>) -> Result<Vec<IpAddr>> {
+async fn internal_addresses(filter: Option<String>) -> Result<Vec<IpNet>> {
     let (connection, handle, _) = new_connection()?;
     tokio::spawn(connection);
 
@@ -133,14 +134,18 @@ async fn internal_addresses(filter: Option<String>) -> Result<Vec<IpAddr>> {
                         AF_INET => {
                             let octets: [u8; 4] = (*bytes).clone().try_into().unwrap();
                             let ip = IpAddr::from(Ipv4Addr::from(octets));
+                            let net = IpNet::new(ip, v.header.prefix_len)
+                                .unwrap();
 
-                            Some(ip)
+                            Some(net)
                         }
                         AF_INET6 => {
                             let octets: [u8; 16] = (*bytes).clone().try_into().unwrap();
                             let ip = IpAddr::from(Ipv6Addr::from(octets));
+                            let net = IpNet::new(ip, v.header.prefix_len)
+                                .unwrap();
 
-                            Some(ip)
+                            Some(net)
                         }
                         _ => None,
                     }
@@ -151,7 +156,7 @@ async fn internal_addresses(filter: Option<String>) -> Result<Vec<IpAddr>> {
             .try_filter(|v| future::ready(v.is_some()))
             .filter_map(|v| future::ready(v.unwrap()));
 
-        link_addrs.append(&mut addrs.collect::<Vec<IpAddr>>().await);
+        link_addrs.append(&mut addrs.collect::<Vec<IpNet>>().await);
 
         num_links += 1;
     }
