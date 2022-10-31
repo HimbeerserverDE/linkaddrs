@@ -39,7 +39,7 @@ impl From<std::io::Error> for Error {
     }
 }
 
-type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 pub fn addresses(link: String) -> Result<Vec<IpAddr>> {
     let rt = Runtime::new()?;
