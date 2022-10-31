@@ -80,6 +80,30 @@ pub fn all_addresses() -> Result<Vec<IpAddr>> {
     rt.block_on(internal_addresses(None))
 }
 
+pub fn all_ipv4_addresses() -> Result<Vec<Ipv4Addr>> {
+    let addrs = all_addresses()?
+        .iter()
+        .filter_map(|addr| match addr {
+            IpAddr::V4(addr) => Some(*addr),
+            IpAddr::V6(_) => None,
+        })
+        .collect();
+
+    Ok(addrs)
+}
+
+pub fn all_ipv6_addresses() -> Result<Vec<Ipv6Addr>> {
+    let addrs = all_addresses()?
+        .iter()
+        .filter_map(|addr| match addr {
+            IpAddr::V4(_) => None,
+            IpAddr::V6(addr) => Some(*addr),
+        })
+        .collect();
+
+    Ok(addrs)
+}
+
 async fn internal_addresses(filter: Option<String>) -> Result<Vec<IpAddr>> {
     let (connection, handle, _) = new_connection()?;
     tokio::spawn(connection);
