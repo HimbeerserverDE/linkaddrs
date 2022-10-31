@@ -1,5 +1,6 @@
 use std::fmt;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::ops::AddAssign;
 
 use futures::future;
 use futures::stream::{StreamExt, TryStreamExt};
@@ -128,7 +129,7 @@ async fn internal_addresses(filter: Option<String>) -> Result<Vec<IpNet>> {
 
     let mut links = links.execute();
 
-    let mut num_links = 0;
+    let mut num_links = 0_i32;
     let mut link_addrs = Vec::new();
 
     while let Some(link) = links.try_next().await? {
@@ -167,7 +168,7 @@ async fn internal_addresses(filter: Option<String>) -> Result<Vec<IpNet>> {
 
         link_addrs.append(&mut addrs.collect::<Vec<IpNet>>().await);
 
-        num_links += 1;
+        num_links.add_assign(1);
     }
 
     if num_links > 0 {
