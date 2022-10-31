@@ -12,7 +12,7 @@ use tokio::runtime::Runtime;
 pub enum Error {
     RtNetlink(rtnetlink::Error),
     IoError(std::io::Error),
-    LinkNotFound(String),
+    LinkNotFound(Option<String>),
 }
 
 impl std::error::Error for Error {}
@@ -22,7 +22,10 @@ impl fmt::Display for Error {
         match self {
             Self::RtNetlink(e) => write!(fmt, "rtnetlink error: {}", e),
             Self::IoError(e) => write!(fmt, "rtnetlink connection failed: {}", e),
-            Self::LinkNotFound(link) => write!(fmt, "link not found: {}", link),
+            Self::LinkNotFound(filter) => match filter {
+                Some(link) => write!(fmt, "link not found: {}", link),
+                None => write!(fmt, "no links found"),
+            }
         }
     }
 }
@@ -44,20 +47,31 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub fn addresses(link: String) -> Result<Vec<IpAddr>> {
     let rt = Runtime::new()?;
 
-    rt.block_on(internal_addresses(link))
+    rt.block_on(internal_addresses(Some(link)))
 }
 
-async fn internal_addresses(link: String) -> Result<Vec<IpAddr>> {
+pub fn all_addresses() -> Result<Vec<IpAddr>> {
+    let rt = Runtime::new()?;
+
+    rt.block_on(internal_addresses(None))
+}
+
+async fn internal_addresses(filter: Option<String>) -> Result<Vec<IpAddr>> {
     let (connection, handle, _) = new_connection()?;
     tokio::spawn(connection);
 
-    let mut links = handle
-        .link()
-        .get()
-        .match_name(link.clone())
-        .execute();
+    let mut links = handle.link().get();
 
-    if let Some(link) = links.try_next().await? {
+    if let Some(link) = filter.clone() {
+        links = links.match_name(link);
+    }
+
+    let mut links = links.execute();
+
+    let mut num_links = 0;
+    let mut link_addrs = Vec::new();
+
+    while let Some(link) = links.try_next().await? {
         let addrs = handle
             .address()
             .get()
@@ -101,8 +115,14 @@ async fn internal_addresses(link: String) -> Result<Vec<IpAddr>> {
             .try_filter(|v| future::ready(v.is_some()))
             .filter_map(|v| future::ready(v.unwrap()));
 
-        Ok(addrs.collect::<Vec<IpAddr>>().await)
+        link_addrs.append(&mut addrs.collect::<Vec<IpAddr>>().await);
+
+        num_links += 1;
+    }
+
+    if num_links > 0 {
+        Ok(link_addrs)
     } else {
-        Err(Error::LinkNotFound(link))
+        Err(Error::LinkNotFound(filter))
     }
 }
