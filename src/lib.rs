@@ -25,7 +25,7 @@ impl fmt::Display for Error {
             Self::LinkNotFound(filter) => match filter {
                 Some(link) => write!(fmt, "link not found: {}", link),
                 None => write!(fmt, "no links found"),
-            }
+            },
         }
     }
 }
@@ -83,30 +83,18 @@ async fn internal_addresses(filter: Option<String>) -> Result<Vec<IpAddr>> {
                 if let Some(Address(bytes)) = v.nlas.first() {
                     match v.header.family as u16 {
                         AF_INET => {
-                            let octets: [u8; 4] = (*bytes)
-                                .clone()
-                                .try_into()
-                                .unwrap();
-
-                            let ip = IpAddr::from(
-                                Ipv4Addr::from(octets)
-                            );
+                            let octets: [u8; 4] = (*bytes).clone().try_into().unwrap();
+                            let ip = IpAddr::from(Ipv4Addr::from(octets));
 
                             Some(ip)
                         }
                         AF_INET6 => {
-                            let octets: [u8; 16] = (*bytes)
-                                .clone()
-                                .try_into()
-                                .unwrap();
-
-                            let ip = IpAddr::from(
-                                Ipv6Addr::from(octets)
-                            );
+                            let octets: [u8; 16] = (*bytes).clone().try_into().unwrap();
+                            let ip = IpAddr::from(Ipv6Addr::from(octets));
 
                             Some(ip)
                         }
-                        _ => None
+                        _ => None,
                     }
                 } else {
                     None
