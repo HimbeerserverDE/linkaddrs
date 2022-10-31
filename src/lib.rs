@@ -134,16 +134,14 @@ async fn internal_addresses(filter: Option<String>) -> Result<Vec<IpNet>> {
                         AF_INET => {
                             let octets: [u8; 4] = (*bytes).clone().try_into().unwrap();
                             let ip = IpAddr::from(Ipv4Addr::from(octets));
-                            let net = IpNet::new(ip, v.header.prefix_len)
-                                .unwrap();
+                            let net = IpNet::new(ip, v.header.prefix_len).unwrap();
 
                             Some(net)
                         }
                         AF_INET6 => {
                             let octets: [u8; 16] = (*bytes).clone().try_into().unwrap();
                             let ip = IpAddr::from(Ipv6Addr::from(octets));
-                            let net = IpNet::new(ip, v.header.prefix_len)
-                                .unwrap();
+                            let net = IpNet::new(ip, v.header.prefix_len).unwrap();
 
                             Some(net)
                         }
