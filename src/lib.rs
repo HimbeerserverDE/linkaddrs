@@ -50,6 +50,18 @@ pub fn addresses(link: String) -> Result<Vec<IpAddr>> {
     rt.block_on(internal_addresses(Some(link)))
 }
 
+pub fn ipv4_addresses(link: String) -> Result<Vec<Ipv4Addr>> {
+    let addrs = addresses(link)?
+        .iter()
+        .filter_map(|addr| match addr {
+            IpAddr::V4(addr) => Some(*addr),
+            IpAddr::V6(_) => None,
+        })
+        .collect();
+
+    Ok(addrs)
+}
+
 pub fn all_addresses() -> Result<Vec<IpAddr>> {
     let rt = Runtime::new()?;
 
