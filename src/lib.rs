@@ -62,6 +62,18 @@ pub fn ipv4_addresses(link: String) -> Result<Vec<Ipv4Addr>> {
     Ok(addrs)
 }
 
+pub fn ipv6_addresses(link: String) -> Result<Vec<Ipv6Addr>> {
+    let addrs = addresses(link)?
+        .iter()
+        .filter_map(|addr| match addr {
+            IpAddr::V4(_) => None,
+            IpAddr::V6(addr) => Some(*addr),
+        })
+        .collect();
+
+    Ok(addrs)
+}
+
 pub fn all_addresses() -> Result<Vec<IpAddr>> {
     let rt = Runtime::new()?;
 
