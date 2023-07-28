@@ -8,6 +8,6 @@ edition = "2021"
 [dependencies]
 futures = "0.3.25"
 ipnet = "2.5.0"
-netlink-packet-route = "0.15.0"
-rtnetlink = "0.12.0"
-tokio = { version = "1.0.1", features = ["rt-multi-thread"] }
+netlink-packet-route = "0.17.0"
+rtnetlink = "0.13.1"
+tokio = { version = "1.0", features = ["rt-multi-thread"] }
