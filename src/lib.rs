@@ -15,7 +15,6 @@ use tokio::runtime::Runtime;
 pub enum Error {
     RtNetlink(rtnetlink::Error),
     IoError(std::io::Error),
-    LinkNotFound(Option<String>),
 }
 
 impl std::error::Error for Error {}
@@ -25,10 +24,6 @@ impl fmt::Display for Error {
         match self {
             Self::RtNetlink(e) => write!(fmt, "rtnetlink error: {}", e),
             Self::IoError(e) => write!(fmt, "rtnetlink connection failed: {}", e),
-            Self::LinkNotFound(filter) => match filter {
-                Some(link) => write!(fmt, "link not found: {}", link),
-                None => write!(fmt, "no links found"),
-            },
         }
     }
 }
@@ -171,9 +166,5 @@ async fn internal_addresses(filter: Option<String>) -> Result<Vec<IpNet>> {
         num_links.add_assign(1);
     }
 
-    if num_links > 0 {
-        Ok(link_addrs)
-    } else {
-        Err(Error::LinkNotFound(filter))
-    }
+    Ok(link_addrs)
 }
